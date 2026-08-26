@@ -8,16 +8,11 @@ on:
         required: false
         default: ""
       go_image:
-        description: "Go 基础镜像（amld64 构建强制官方源）"
+        description: "Go 基础镜像（amd64 构建强制官方源）"
         required: false
         default: "golang:1.26-bookworm"
   push:
     branches: [ main ]
-    paths:
-      - 'Dockerfile'
-      - 'backend/**'
-      - 'frontend/out/**'
-      - '.github/workflows/build-and-publish-amd64.yml'
 
 jobs:
   publish:
@@ -25,9 +20,11 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout
+      - name: Clone private source repo
         uses: actions/checkout@v4
         with:
+          repository: ${{ secrets.SOURCE_REPO }}
+          token: ${{ secrets.SOURCE_REPO_PAT }}
           fetch-depth: 1
 
       - name: Resolve build args
