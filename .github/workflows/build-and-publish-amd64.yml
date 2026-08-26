@@ -15,7 +15,8 @@ on:
     branches: [ main ]
 
 jobs:
-  publish:
+  build-amd64:
+    name: Build amd64
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,9 +37,6 @@ jobs:
             echo "commit=${{ inputs.git_commit }}" >> "$GITHUB_OUTPUT"
           fi
           echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -68,21 +66,108 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build and push multi-arch
+      - name: Build and push amd64
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           provenance: false
-          outputs: |
-            type=image,name=withyou,push=true,oci-mediatypes=false
           build-args: |
             GO_IMAGE=${{ inputs.go_image }}
             GIT_COMMIT=${{ steps.args.outputs.commit }}
             BUILD_TIME=${{ steps.args.outputs.build_time }}
           tags: |
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33-amd64
+          cache-from: type=gha,scope=amd64
+          cache-to: type=gha,mode=max,scope=amd64
+
+  build-arm64:
+    name: Build arm64
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Clone private source repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.SOURCE_REPO }}
+          token: ${{ secrets.SOURCE_REPO_PAT }}
+          fetch-depth: 1
+
+      - name: Resolve build args
+        id: args
+        run: |
+          if [ -z "${{ inputs.git_commit }}" ]; then
+            echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          else
+            echo "commit=${{ inputs.git_commit }}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Sync version from root VERSION
+        working-directory: .
+        run: node scripts/sync-version.mjs frontend
+
+      - name: Build frontend static
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: registry.cn-beijing.aliyuncs.com
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push arm64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          build-args: |
+            GO_IMAGE=${{ inputs.go_image }}
+            GIT_COMMIT=${{ steps.args.outputs.commit }}
+            BUILD_TIME=${{ steps.args.outputs.build_time }}
+          tags: |
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33-arm64
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64
+
+  merge-manifest:
+    name: Merge manifest list
+    needs: [build-amd64, build-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: registry.cn-beijing.aliyuncs.com
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Create and push multi-arch manifest
+        run: |
+          docker buildx imagetools create \
+            -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33 \
+            -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:latest \
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33-amd64 \
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33-arm64
