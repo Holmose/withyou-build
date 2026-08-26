@@ -78,7 +78,7 @@ jobs:
             GIT_COMMIT=${{ steps.args.outputs.commit }}
             BUILD_TIME=${{ steps.args.outputs.build_time }}
           tags: |
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.34-amd64
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33-amd64
           cache-from: type=gha,scope=amd64
           cache-to: type=gha,mode=max,scope=amd64
 
@@ -145,7 +145,7 @@ jobs:
             GIT_COMMIT=${{ steps.args.outputs.commit }}
             BUILD_TIME=${{ steps.args.outputs.build_time }}
           tags: |
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.34-arm64
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33-arm64
           cache-from: type=gha,scope=arm64
           cache-to: type=gha,mode=max,scope=arm64
 
@@ -167,7 +167,7 @@ jobs:
       - name: Create and push multi-arch manifest
         run: |
           docker buildx imagetools create \
-            -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.34 \
+            -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33 \
             -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:latest \
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.34-amd64 \
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.34-arm64
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33-amd64 \
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33-arm64
