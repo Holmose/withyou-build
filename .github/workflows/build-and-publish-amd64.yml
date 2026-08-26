@@ -68,19 +68,21 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build and push amd64
+      - name: Build and push multi-arch
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          provenance: false
+          outputs: |
+            type=image,name=withyou,push=true,oci-mediatypes=false
           build-args: |
             GO_IMAGE=${{ inputs.go_image }}
             GIT_COMMIT=${{ steps.args.outputs.commit }}
             BUILD_TIME=${{ steps.args.outputs.build_time }}
           tags: |
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33-amd64
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:latest-amd64
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.33
             registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
