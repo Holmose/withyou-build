@@ -53,6 +53,10 @@ jobs:
         with:
           version: 9
 
+      - name: Sync version from root VERSION
+        working-directory: .
+        run: node scripts/sync-version.mjs frontend
+
       - name: Build frontend static
         working-directory: frontend
         run: pnpm install --frozen-lockfile && pnpm build
