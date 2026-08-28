@@ -182,8 +182,15 @@ jobs:
 
       - name: Create and push multi-arch manifest
         run: |
-          docker buildx imagetools create \
-            -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.36 \
-            -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:latest \
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:${{ steps.args.outputs.tag }}-amd64 \
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:${{ steps.args.outputs.tag }}-arm64
+          if [ -z "${{ inputs.image_tag }}" ]; then
+            docker buildx imagetools create \
+              -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.36 \
+              -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:latest \
+              registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.36-amd64 \
+              registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.36-arm64
+          else
+            docker buildx imagetools create \
+              -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:${{ inputs.image_tag }} \
+              registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:${{ inputs.image_tag }}-amd64 \
+              registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:${{ inputs.image_tag }}-arm64
+          fi
