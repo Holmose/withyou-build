@@ -11,6 +11,10 @@ on:
         description: "Go 基础镜像（multi-arch，含 amd64+arm64）"
         required: false
         default: "golang:1.26-bookworm"
+      image_tag:
+        description: "镜像 tag（默认 v2.2.36；非空时同时生成 :<tag> 与 :<tag>-amd64/-arm64，不触碰 latest）"
+        required: false
+        default: ""
   push:
     branches: [ main ]
 
@@ -27,6 +31,7 @@ jobs:
           repository: ${{ secrets.SOURCE_REPO }}
           token: ${{ secrets.SOURCE_REPO_PAT }}
           fetch-depth: 1
+          ref: ${{ inputs.git_commit }}
 
       - name: Resolve build args
         id: args
@@ -37,6 +42,11 @@ jobs:
             echo "commit=${{ inputs.git_commit }}" >> "$GITHUB_OUTPUT"
           fi
           echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          if [ -z "${{ inputs.image_tag }}" ]; then
+            echo "tag=v2.2.36" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -78,7 +88,7 @@ jobs:
             GIT_COMMIT=${{ steps.args.outputs.commit }}
             BUILD_TIME=${{ steps.args.outputs.build_time }}
           tags: |
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.36-amd64
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:${{ steps.args.outputs.tag }}-amd64
           cache-from: type=gha,scope=amd64
           cache-to: type=gha,mode=max,scope=amd64
 
@@ -94,6 +104,7 @@ jobs:
           repository: ${{ secrets.SOURCE_REPO }}
           token: ${{ secrets.SOURCE_REPO_PAT }}
           fetch-depth: 1
+          ref: ${{ inputs.git_commit }}
 
       - name: Resolve build args
         id: args
@@ -104,6 +115,11 @@ jobs:
             echo "commit=${{ inputs.git_commit }}" >> "$GITHUB_OUTPUT"
           fi
           echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          if [ -z "${{ inputs.image_tag }}" ]; then
+            echo "tag=v2.2.36" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -145,7 +161,7 @@ jobs:
             GIT_COMMIT=${{ steps.args.outputs.commit }}
             BUILD_TIME=${{ steps.args.outputs.build_time }}
           tags: |
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.36-arm64
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:${{ steps.args.outputs.tag }}-arm64
           cache-from: type=gha,scope=arm64
           cache-to: type=gha,mode=max,scope=arm64
 
@@ -169,5 +185,5 @@ jobs:
           docker buildx imagetools create \
             -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.36 \
             -t registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:latest \
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.36-amd64 \
-            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:v2.2.36-arm64
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:${{ steps.args.outputs.tag }}-amd64 \
+            registry.cn-beijing.aliyuncs.com/withyou_holmose/deeix-chat-withyou:${{ steps.args.outputs.tag }}-arm64
